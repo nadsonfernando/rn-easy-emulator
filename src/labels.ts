@@ -41,6 +41,8 @@ export const Progress = {
 export const Messages = {
   pickSimulator: "Select a simulator in the list (iOS or Android).",
   openWorkspaceFolder: "Open a workspace folder first.",
+  notReactNativeProject:
+    "This does not appear to be a React Native project. The run command is only available in projects that have react-native as a dependency.",
   iosListWarningPrefix: "iOS:",
   iosListWarningBody: (detail: string) =>
     `Could not list simulators (${detail}).`,

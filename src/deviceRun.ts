@@ -21,7 +21,12 @@ import {
 import type { IosSimulator } from "./iosDevices";
 import * as Labels from "./labels";
 import { runBinary } from "./shell";
-import { runCommandInProjectTerminal } from "./terminalRunner";
+import { runCommandBackground } from "./processRunner";
+
+interface RunCallbacks {
+  onCommandStart?: () => void;
+  onCommandExit?: () => void;
+}
 
 const DEFAULT_IOS_RUN =
   'npx react-native run-ios --simulator "{{name}}"';
@@ -32,7 +37,8 @@ const DEFAULT_ANDROID_RUN =
 export async function runIosProject(
   sim: IosSimulator,
   workspaceRoot: string,
-  configuration: vscode.WorkspaceConfiguration
+  configuration: vscode.WorkspaceConfiguration,
+  callbacks: RunCallbacks = {},
 ): Promise<void> {
   if (sim.state !== "Booted") {
     await vscode.window.withProgress(
@@ -44,7 +50,7 @@ export async function runIosProject(
         await bootIosSimulator(sim.udid);
         await openSimulatorApp();
         await delay(IOS_BOOT_UI_DELAY_MS);
-      }
+      },
     );
   }
 
@@ -57,11 +63,15 @@ export async function runIosProject(
     runtime: sim.runtimeLabel,
   });
 
-  runCommandInProjectTerminal(workspaceRoot, command);
+  callbacks.onCommandStart?.();
+
+  runCommandBackground(workspaceRoot, command, () => {
+    callbacks.onCommandExit?.();
+  });
 
   vscode.window.setStatusBarMessage(
     Labels.Status.runningCommand(command),
-    STATUS_BAR_COMMAND_MS
+    STATUS_BAR_COMMAND_MS,
   );
 }
 
@@ -69,7 +79,8 @@ export async function runAndroidProject(
   sdkRoot: string,
   avd: AndroidAvd,
   workspaceRoot: string,
-  configuration: vscode.WorkspaceConfiguration
+  configuration: vscode.WorkspaceConfiguration,
+  callbacks: RunCallbacks = {},
 ): Promise<void> {
   let deviceId = avd.adbSerial ?? "";
 
@@ -81,7 +92,7 @@ export async function runAndroidProject(
         location: vscode.ProgressLocation.Notification,
         title: Labels.Progress.waitingForAdb(avd.avdName),
       },
-      () => waitForAvdSerial(sdkRoot, avd.avdName, ANDROID_ADB_WAIT_MS)
+      () => waitForAvdSerial(sdkRoot, avd.avdName, ANDROID_ADB_WAIT_MS),
     );
 
     if (!serial) {
@@ -99,11 +110,15 @@ export async function runAndroidProject(
     avd: avd.avdName,
   });
 
-  runCommandInProjectTerminal(workspaceRoot, command);
+  callbacks.onCommandStart?.();
+
+  runCommandBackground(workspaceRoot, command, () => {
+    callbacks.onCommandExit?.();
+  });
 
   vscode.window.setStatusBarMessage(
     Labels.Status.runningCommand(command),
-    STATUS_BAR_COMMAND_MS
+    STATUS_BAR_COMMAND_MS,
   );
 }
 
@@ -121,13 +136,13 @@ export async function toggleIosPower(sim: IosSimulator): Promise<void> {
     async () => {
       await bootIosSimulator(sim.udid);
       await openSimulatorApp();
-    }
+    },
   );
 }
 
 export async function toggleAndroidPower(
   sdkRoot: string,
-  avd: AndroidAvd
+  avd: AndroidAvd,
 ): Promise<void> {
   if (avd.state === "device" && avd.adbSerial) {
     const adbExecutable = path.join(sdkRoot, "platform-tools", "adb");

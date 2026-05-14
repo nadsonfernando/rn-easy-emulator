@@ -10,6 +10,15 @@ export type DeviceTreeElement =
   | { kind: "androidAvd"; sdk: string; avd: AndroidAvd }
   | { kind: "androidHint"; message: string };
 
+export const enum DeviceStatus {
+  Idle = 0,
+  Launching = 1,
+  Running = 2,
+}
+
+const GREEN = new vscode.ThemeColor("terminal.ansiBrightGreen");
+const RED   = new vscode.ThemeColor("terminal.ansiBrightRed");
+
 export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeElement> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
     DeviceTreeElement | undefined | void
@@ -18,12 +27,23 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   private iosDevices: IosSimulator[] = [];
-
   private androidDevices: AndroidAvd[] = [];
-
   private androidSdkPath: string | undefined;
-
   private androidLoadError: string | undefined;
+  private readonly deviceStatuses = new Map<string, DeviceStatus>();
+
+  setDeviceStatus(deviceId: string, status: DeviceStatus): void {
+    if (status === DeviceStatus.Idle) {
+      this.deviceStatuses.delete(deviceId);
+    } else {
+      this.deviceStatuses.set(deviceId, status);
+    }
+    this.onDidChangeTreeDataEmitter.fire();
+  }
+
+  private getDeviceStatus(deviceId: string): DeviceStatus {
+    return this.deviceStatuses.get(deviceId) ?? DeviceStatus.Idle;
+  }
 
   setData(snapshot: {
     ios: IosSimulator[];
@@ -79,13 +99,11 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
   }
 
   private countRunningIosSimulators(): number {
-    return this.iosDevices.filter((simulator) => simulator.state === "Booted")
-      .length;
+    return this.iosDevices.filter((s) => s.state === "Booted").length;
   }
 
   private countConnectedAndroidDevices(): number {
-    return this.androidDevices.filter((device) => device.state === "device")
-      .length;
+    return this.androidDevices.filter((d) => d.state === "device").length;
   }
 
   private createPlatformItem(platform: "ios" | "android"): vscode.TreeItem {
@@ -107,7 +125,6 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
     item.iconPath = new vscode.ThemeIcon(
       platform === "ios" ? "device-mobile" : "vm",
     );
-
     item.contextValue = "platform";
 
     return item;
@@ -118,9 +135,7 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
       message,
       vscode.TreeItemCollapsibleState.None,
     );
-
     item.iconPath = new vscode.ThemeIcon("info");
-
     return item;
   }
 
@@ -129,6 +144,7 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
   ): vscode.TreeItem {
     const { sim } = element;
     const isBooted = sim.state === "Booted";
+    const status = this.getDeviceStatus(sim.udid);
 
     const item = new vscode.TreeItem(
       sim.name,
@@ -145,7 +161,14 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
       sim.state,
     );
 
-    item.iconPath = new vscode.ThemeIcon("device-mobile");
+    if (status !== DeviceStatus.Idle) {
+      item.iconPath = new vscode.ThemeIcon("loading~spin");
+    } else if (isBooted) {
+      item.iconPath = new vscode.ThemeIcon("circle-filled", GREEN);
+    } else {
+      item.iconPath = new vscode.ThemeIcon("circle-filled", RED);
+    }
+
     item.contextValue = isBooted ? "sim-ios-booted" : "sim-ios-offline";
 
     item.command = {
@@ -162,6 +185,7 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
   ): vscode.TreeItem {
     const { avd } = element;
     const isOnline = avd.state === "device" && !!avd.adbSerial;
+    const status = this.getDeviceStatus(avd.avdName);
 
     const item = new vscode.TreeItem(
       avd.avdName,
@@ -176,7 +200,14 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
       ? `Serial: ${avd.adbSerial}`
       : Labels.AndroidTree.tooltipOfflineHint;
 
-    item.iconPath = new vscode.ThemeIcon("device-mobile");
+    if (status !== DeviceStatus.Idle) {
+      item.iconPath = new vscode.ThemeIcon("loading~spin");
+    } else if (isOnline) {
+      item.iconPath = new vscode.ThemeIcon("circle-filled", GREEN);
+    } else {
+      item.iconPath = new vscode.ThemeIcon("circle-filled", RED);
+    }
+
     item.contextValue = isOnline ? "sim-android-device" : "sim-android-offline";
 
     item.command = {
@@ -191,7 +222,6 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
   private getAndroidSectionChildren(): DeviceTreeElement[] {
     if (!this.androidSdkPath) {
       const message = this.androidLoadError ?? Labels.Hints.androidSdkMissing;
-
       return [{ kind: "androidHint", message }];
     }
 
