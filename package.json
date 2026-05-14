@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "nadsonfernando",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nadsonfernando/rn-easy-emulator.git"
+  },
   "icon": "media/extension-icon.jpg",
   "engines": {
     "vscode": "^1.85.0"
