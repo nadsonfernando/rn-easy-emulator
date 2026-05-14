@@ -30,7 +30,12 @@ function runtimeShortLabel(runtimeKey: string): string {
 }
 
 export async function listIosSimulators(): Promise<IosSimulator[]> {
-  const { stdout } = await runBinary("xcrun", ["simctl", "list", "devices", "-j"]);
+  const { stdout } = await runBinary("xcrun", [
+    "simctl",
+    "list",
+    "devices",
+    "-j",
+  ]);
   const parsed = JSON.parse(stdout) as SimctlDevicesJson;
   const out: IosSimulator[] = [];
   for (const [runtimeKey, list] of Object.entries(parsed.devices ?? {})) {
@@ -51,7 +56,11 @@ export async function listIosSimulators(): Promise<IosSimulator[]> {
       });
     }
   }
-  out.sort((a, b) => a.name.localeCompare(b.name) || a.runtimeLabel.localeCompare(b.runtimeLabel));
+  out.sort(
+    (a, b) =>
+      a.name.localeCompare(b.name) ||
+      a.runtimeLabel.localeCompare(b.runtimeLabel),
+  );
   return out;
 }
 

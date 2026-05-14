@@ -10,9 +10,7 @@ export type DeviceTreeElement =
   | { kind: "androidAvd"; sdk: string; avd: AndroidAvd }
   | { kind: "androidHint"; message: string };
 
-export class DeviceTreeProvider
-  implements vscode.TreeDataProvider<DeviceTreeElement>
-{
+export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeElement> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
     DeviceTreeElement | undefined | void
   >();
@@ -41,7 +39,7 @@ export class DeviceTreeProvider
   }
 
   getTreeItem(
-    element: DeviceTreeElement
+    element: DeviceTreeElement,
   ): vscode.TreeItem | Thenable<vscode.TreeItem> {
     switch (element.kind) {
       case "platform":
@@ -56,7 +54,7 @@ export class DeviceTreeProvider
   }
 
   getChildren(
-    element?: DeviceTreeElement
+    element?: DeviceTreeElement,
   ): vscode.ProviderResult<DeviceTreeElement[]> {
     if (!element) {
       return [
@@ -103,11 +101,11 @@ export class DeviceTreeProvider
 
     const item = new vscode.TreeItem(
       label,
-      vscode.TreeItemCollapsibleState.Expanded
+      vscode.TreeItemCollapsibleState.Expanded,
     );
 
     item.iconPath = new vscode.ThemeIcon(
-      platform === "ios" ? "device-mobile" : "vm"
+      platform === "ios" ? "device-mobile" : "vm",
     );
 
     item.contextValue = "platform";
@@ -118,7 +116,7 @@ export class DeviceTreeProvider
   private createHintItem(message: string): vscode.TreeItem {
     const item = new vscode.TreeItem(
       message,
-      vscode.TreeItemCollapsibleState.None
+      vscode.TreeItemCollapsibleState.None,
     );
 
     item.iconPath = new vscode.ThemeIcon("info");
@@ -127,14 +125,14 @@ export class DeviceTreeProvider
   }
 
   private createIosSimulatorItem(
-    element: Extract<DeviceTreeElement, { kind: "iosSim" }>
+    element: Extract<DeviceTreeElement, { kind: "iosSim" }>,
   ): vscode.TreeItem {
     const { sim } = element;
     const isBooted = sim.state === "Booted";
 
     const item = new vscode.TreeItem(
       sim.name,
-      vscode.TreeItemCollapsibleState.None
+      vscode.TreeItemCollapsibleState.None,
     );
 
     item.description = isBooted
@@ -144,7 +142,7 @@ export class DeviceTreeProvider
     item.tooltip = Labels.IosTree.tooltipState(
       sim.runtimeLabel,
       sim.udid,
-      sim.state
+      sim.state,
     );
 
     item.iconPath = new vscode.ThemeIcon("device-mobile");
@@ -160,14 +158,14 @@ export class DeviceTreeProvider
   }
 
   private createAndroidAvdItem(
-    element: Extract<DeviceTreeElement, { kind: "androidAvd" }>
+    element: Extract<DeviceTreeElement, { kind: "androidAvd" }>,
   ): vscode.TreeItem {
     const { avd } = element;
     const isOnline = avd.state === "device" && !!avd.adbSerial;
 
     const item = new vscode.TreeItem(
       avd.avdName,
-      vscode.TreeItemCollapsibleState.None
+      vscode.TreeItemCollapsibleState.None,
     );
 
     item.description = isOnline
@@ -192,8 +190,7 @@ export class DeviceTreeProvider
 
   private getAndroidSectionChildren(): DeviceTreeElement[] {
     if (!this.androidSdkPath) {
-      const message =
-        this.androidLoadError ?? Labels.Hints.androidSdkMissing;
+      const message = this.androidLoadError ?? Labels.Hints.androidSdkMissing;
 
       return [{ kind: "androidHint", message }];
     }

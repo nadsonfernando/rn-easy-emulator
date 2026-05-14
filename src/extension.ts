@@ -18,21 +18,19 @@ import {
 import * as Labels from "./labels";
 
 function isRunnableDevice(
-  element: DeviceTreeElement | undefined
+  element: DeviceTreeElement | undefined,
 ): element is Extract<
   DeviceTreeElement,
   { kind: "iosSim" } | { kind: "androidAvd" }
 > {
   return (
-    !!element &&
-    element.kind !== "platform" &&
-    element.kind !== "androidHint"
+    !!element && element.kind !== "platform" && element.kind !== "androidHint"
   );
 }
 
 function resolveSelectedNode(
   explicit: DeviceTreeElement | undefined,
-  treeView: vscode.TreeView<DeviceTreeElement>
+  treeView: vscode.TreeView<DeviceTreeElement>,
 ): DeviceTreeElement | undefined {
   return explicit ?? (treeView.selection[0] as DeviceTreeElement | undefined);
 }
@@ -50,7 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
         location: vscode.ProgressLocation.Window,
         title: Labels.Progress.refreshingDevices,
       },
-      () => refreshDeviceCatalog(treeProvider)
+      () => refreshDeviceCatalog(treeProvider),
     );
   };
 
@@ -58,13 +56,16 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const refreshTimer = setInterval(
     () => void refreshDeviceCatalog(treeProvider),
-    DEVICE_LIST_REFRESH_MS
+    DEVICE_LIST_REFRESH_MS,
   );
 
   context.subscriptions.push(
     treeView,
 
-    vscode.commands.registerCommand("rnEasyEmulator.refresh", refreshWithProgress),
+    vscode.commands.registerCommand(
+      "rnEasyEmulator.refresh",
+      refreshWithProgress,
+    ),
 
     vscode.commands.registerCommand(
       "rnEasyEmulator.runOnDevice",
@@ -93,13 +94,13 @@ export function activate(context: vscode.ExtensionContext): void {
               selected.sdk,
               selected.avd,
               workspaceRoot,
-              configuration
+              configuration,
             );
           }
         } catch (error) {
           vscode.window.showErrorMessage((error as Error).message);
         }
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -123,7 +124,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
             vscode.window.setStatusBarMessage(
               statusText,
-              wasBooted ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS
+              wasBooted ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
             );
           } else {
             const wasOnline =
@@ -137,7 +138,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
             vscode.window.setStatusBarMessage(
               statusText,
-              wasOnline ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS
+              wasOnline ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
             );
           }
 
@@ -145,10 +146,10 @@ export function activate(context: vscode.ExtensionContext): void {
         } catch (error) {
           vscode.window.showErrorMessage((error as Error).message);
         }
-      }
+      },
     ),
 
-    new vscode.Disposable(() => clearInterval(refreshTimer))
+    new vscode.Disposable(() => clearInterval(refreshTimer)),
   );
 }
 
