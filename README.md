@@ -21,7 +21,8 @@ To install from a `.vsix` manually: **Extensions** → **⋯** → **Install fro
 2. In the **Activity Bar** (icons on the left), click **RN Emulator** (phone icon).
 3. In the **Simulators** view you’ll see **iOS** and **Android** with available devices.
 4. For each simulator/emulator:
-   - **Play** — runs the project on that device. If you do not set a custom command, the extension picks **Expo** vs **bare React Native** from `package.json` and runs `npx expo run:*` or `npx react-native run-*` with the right device id.
+   - **Play** — runs the project on that device (or boots then runs if it is off). If you do not set a custom command, the extension picks **Expo** vs **bare** from `package.json`: iOS uses `expo run:ios` or `react-native run-ios` with the simulator id; Android always uses `react-native run-android` with the ADB serial (`{{deviceId}}`).
+   - **Restart** (while the device is running) — stops the current build task for that device and starts a fresh run.
    - **Power** — boots or shuts down the iOS simulator or Android AVD.
 5. The **Refresh** button in the view title bar reloads the list.
 
@@ -34,7 +35,7 @@ In **Settings**, search for **RN Easy Emulator** or edit `settings.json`:
 | Key | Description |
 | --- | --- |
 | `rnEasyEmulator.iosRunCommand` | Optional override. When unset: Expo → `npx expo run:ios --device {{udid}}`; bare → `npx react-native run-ios --udid {{udid}}`. |
-| `rnEasyEmulator.androidRunCommand` | Optional override. When unset: Expo → `npx expo run:android --device {{deviceId}}`; bare → `npx react-native run-android --deviceId {{deviceId}}`. |
+| `rnEasyEmulator.androidRunCommand` | Optional override. When unset, Expo and bare both use `npx react-native run-android --deviceId {{deviceId}}` (ADB serial). |
 | `rnEasyEmulator.androidSdkHome` | Android SDK root. When empty, `ANDROID_HOME` / `ANDROID_SDK_ROOT` is used. |
 | `rnEasyEmulator.shellPath` | Shell for commands (e.g. `/bin/zsh`). When empty, the system default applies. |
 

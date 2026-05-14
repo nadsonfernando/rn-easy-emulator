@@ -12,6 +12,7 @@ export function androidPlatformLabel(connectedCount: number): string {
 export const Power = {
   startEmulator: "Start emulator",
   stopEmulator: "Stop emulator",
+  restartAppOnDevice: "Restart app on device",
 } as const;
 
 export const IosTree = {
@@ -58,6 +59,8 @@ export const Messages = {
     "Could not start the build task. Check the Terminal / Tasks panel for details.",
   buildFailedWithExitCode: (code: number) =>
     `Build exited with code ${code}. Scroll the RN Easy Emulator terminal above for the error log.`,
+  restartNeedsRunningEmulator:
+    "Restart is only available while the simulator or emulator is running.",
 } as const;
 
 export const Status = {

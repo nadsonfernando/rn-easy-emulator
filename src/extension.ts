@@ -40,6 +40,15 @@ function deviceIdOf(element: Extract<DeviceTreeElement, { kind: "iosSim" } | { k
   return element.kind === "iosSim" ? element.sim.udid : element.avd.avdName;
 }
 
+function isEmulatorRunningOnline(
+  selected: Extract<DeviceTreeElement, { kind: "iosSim" } | { kind: "androidAvd" }>,
+): boolean {
+  if (selected.kind === "iosSim") {
+    return selected.sim.state === "Booted";
+  }
+  return selected.avd.state === "device" && !!selected.avd.adbSerial;
+}
+
 async function runPowerToggle(
   element: DeviceTreeElement | undefined,
   treeView: vscode.TreeView<DeviceTreeElement>,
@@ -142,6 +151,84 @@ export function activate(context: vscode.ExtensionContext): void {
     DEVICE_LIST_REFRESH_MS,
   );
 
+  const runProjectOnDevice = async (
+    element: DeviceTreeElement | undefined,
+    opts: { requireRunningEmulator: boolean },
+  ): Promise<void> => {
+    const selected = resolveSelectedNode(element, treeView);
+
+    if (!isRunnableDevice(selected)) {
+      vscode.window.showInformationMessage(Labels.Messages.pickSimulator);
+      return;
+    }
+
+    if (!isReactNativeProject) {
+      vscode.window.showInformationMessage(
+        Labels.Messages.notReactNativeProject,
+      );
+      return;
+    }
+
+    if (opts.requireRunningEmulator && !isEmulatorRunningOnline(selected)) {
+      vscode.window.showInformationMessage(
+        Labels.Messages.restartNeedsRunningEmulator,
+      );
+      return;
+    }
+
+    const workspaceRoot = readWorkspaceRoot();
+    if (!workspaceRoot) {
+      vscode.window.showErrorMessage(Labels.Messages.openWorkspaceFolder);
+      return;
+    }
+
+    const configuration = getExtensionConfiguration();
+    const deviceId = deviceIdOf(selected);
+
+    treeProvider.setDeviceStatus(deviceId, DeviceStatus.Launching);
+
+    try {
+      if (selected.kind === "iosSim") {
+        await runIosProject(selected.sim, workspaceRoot, configuration, {
+          onCommandStart: () =>
+            treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
+          onCommandExit: (exitCode) => {
+            treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
+            void refreshDeviceCatalog(treeProvider);
+            if (typeof exitCode === "number" && exitCode !== 0) {
+              void vscode.window.showWarningMessage(
+                Labels.Messages.buildFailedWithExitCode(exitCode),
+              );
+            }
+          },
+        });
+      } else {
+        await runAndroidProject(
+          selected.sdk,
+          selected.avd,
+          workspaceRoot,
+          configuration,
+          {
+            onCommandStart: () =>
+              treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
+            onCommandExit: (exitCode) => {
+              treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
+              void refreshDeviceCatalog(treeProvider);
+              if (typeof exitCode === "number" && exitCode !== 0) {
+                void vscode.window.showWarningMessage(
+                  Labels.Messages.buildFailedWithExitCode(exitCode),
+                );
+              }
+            },
+          },
+        );
+      }
+    } catch (error) {
+      treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
+      vscode.window.showErrorMessage((error as Error).message);
+    }
+  };
+
   // ── Commands ──────────────────────────────────────────────────────────────
   context.subscriptions.push(
     treeView,
@@ -151,75 +238,13 @@ export function activate(context: vscode.ExtensionContext): void {
       refreshWithProgress,
     ),
 
+    vscode.commands.registerCommand("rnEasyEmulator.runOnDevice", (element) =>
+      void runProjectOnDevice(element, { requireRunningEmulator: false }),
+    ),
+
     vscode.commands.registerCommand(
-      "rnEasyEmulator.runOnDevice",
-      async (element?: DeviceTreeElement) => {
-        const selected = resolveSelectedNode(element, treeView);
-
-        if (!isRunnableDevice(selected)) {
-          vscode.window.showInformationMessage(Labels.Messages.pickSimulator);
-          return;
-        }
-
-        if (!isReactNativeProject) {
-          vscode.window.showInformationMessage(
-            Labels.Messages.notReactNativeProject,
-          );
-          return;
-        }
-
-        const workspaceRoot = readWorkspaceRoot();
-        if (!workspaceRoot) {
-          vscode.window.showErrorMessage(Labels.Messages.openWorkspaceFolder);
-          return;
-        }
-
-        const configuration = getExtensionConfiguration();
-        const deviceId = deviceIdOf(selected);
-
-        treeProvider.setDeviceStatus(deviceId, DeviceStatus.Launching);
-
-        try {
-          if (selected.kind === "iosSim") {
-            await runIosProject(selected.sim, workspaceRoot, configuration, {
-              onCommandStart: () =>
-                treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
-              onCommandExit: (exitCode) => {
-                treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
-                void refreshDeviceCatalog(treeProvider);
-                if (typeof exitCode === "number" && exitCode !== 0) {
-                  void vscode.window.showWarningMessage(
-                    Labels.Messages.buildFailedWithExitCode(exitCode),
-                  );
-                }
-              },
-            });
-          } else {
-            await runAndroidProject(
-              selected.sdk,
-              selected.avd,
-              workspaceRoot,
-              configuration,
-              {
-                onCommandStart: () =>
-                  treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
-                onCommandExit: (exitCode) => {
-                  treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
-                  void refreshDeviceCatalog(treeProvider);
-                  if (typeof exitCode === "number" && exitCode !== 0) {
-                    void vscode.window.showWarningMessage(
-                      Labels.Messages.buildFailedWithExitCode(exitCode),
-                    );
-                  }
-                },
-              },
-            );
-          }
-        } catch (error) {
-          treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
-          vscode.window.showErrorMessage((error as Error).message);
-        }
-      },
+      "rnEasyEmulator.restartRunOnDevice",
+      (element) => void runProjectOnDevice(element, { requireRunningEmulator: true }),
     ),
 
     vscode.commands.registerCommand(

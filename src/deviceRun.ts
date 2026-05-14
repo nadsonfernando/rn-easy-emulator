@@ -27,18 +27,18 @@ interface RunCallbacks {
 }
 
 const BARE_IOS = "npx react-native run-ios --udid {{udid}}";
-const BARE_ANDROID = "npx react-native run-android --deviceId {{deviceId}}";
+/** ADB serial (e.g. emulator-5554); works for Expo and bare RN. */
+const RN_ANDROID = "npx react-native run-android --deviceId {{deviceId}}";
 const EXPO_IOS = "npx expo run:ios --device {{udid}}";
-const EXPO_ANDROID = "npx expo run:android --device {{deviceId}}";
 
 async function resolveDefaultRunCommands(
   workspaceRoot: string,
 ): Promise<{ ios: string; android: string }> {
   const runtime = await detectProjectRuntime(workspaceRoot);
   if (runtime === "expo") {
-    return { ios: EXPO_IOS, android: EXPO_ANDROID };
+    return { ios: EXPO_IOS, android: RN_ANDROID };
   }
-  return { ios: BARE_IOS, android: BARE_ANDROID };
+  return { ios: BARE_IOS, android: RN_ANDROID };
 }
 
 async function iosRunTemplateFromConfiguration(
@@ -110,7 +110,7 @@ export async function runIosProject(
   );
 
   try {
-    await runCommandBackground(workspaceRoot, command, (exitCode) => {
+    await runCommandBackground(workspaceRoot, command, sim.udid, (exitCode) => {
       callbacks.onCommandExit?.(exitCode);
     });
   } catch (err) {
@@ -163,7 +163,7 @@ export async function runAndroidProject(
   );
 
   try {
-    await runCommandBackground(workspaceRoot, command, (exitCode) => {
+    await runCommandBackground(workspaceRoot, command, avd.avdName, (exitCode) => {
       callbacks.onCommandExit?.(exitCode);
     });
   } catch (err) {

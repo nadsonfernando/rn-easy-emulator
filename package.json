@@ -50,6 +50,11 @@
         "icon": "$(play)"
       },
       {
+        "command": "rnEasyEmulator.restartRunOnDevice",
+        "title": "Restart app on this device",
+        "icon": "$(debug-restart)"
+      },
+      {
         "command": "rnEasyEmulator.startEmulator",
         "title": "Start emulator",
         "icon": "$(debug-start)"
@@ -94,6 +99,12 @@
           }
         },
         {
+          "command": "rnEasyEmulator.restartRunOnDevice",
+          "when": "view == rnEasyEmulator.devices && rnEasyEmulator.isReactNativeProject && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
+          "group": "inline@1",
+          "icon": "$(debug-restart)"
+        },
+        {
           "command": "rnEasyEmulator.runOnDevice",
           "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/ && rnEasyEmulator.isReactNativeProject",
           "group": "device@1"
@@ -112,6 +123,12 @@
             "light": "media/stop-red.svg",
             "dark": "media/stop-red.svg"
           }
+        },
+        {
+          "command": "rnEasyEmulator.restartRunOnDevice",
+          "when": "view == rnEasyEmulator.devices && rnEasyEmulator.isReactNativeProject && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
+          "group": "device@2",
+          "icon": "$(debug-restart)"
         }
       ]
     },
@@ -137,7 +154,7 @@
         "rnEasyEmulator.androidRunCommand": {
           "type": "string",
           "default": "npx react-native run-android --deviceId {{deviceId}}",
-          "description": "Override Android run command (User or Workspace). If omitted: Expo → npx expo run:android --device {{deviceId}}; bare → npx react-native run-android --deviceId {{deviceId}}. Placeholders: {{deviceId}}, {{avd}}."
+          "description": "Override Android run command (User or Workspace). If omitted: Expo and bare both default to npx react-native run-android --deviceId {{deviceId}} (ADB serial). expo run:android --device expects a different name than emulator-5554. Placeholders: {{deviceId}}, {{avd}}."
         },
         "rnEasyEmulator.androidSdkHome": {
           "type": "string",
