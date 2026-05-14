@@ -153,8 +153,8 @@
         },
         "rnEasyEmulator.androidRunCommand": {
           "type": "string",
-          "default": "npx react-native run-android --deviceId {{deviceId}}",
-          "description": "Override Android run command (User or Workspace). If omitted: Expo and bare both default to npx react-native run-android --deviceId {{deviceId}} (ADB serial). expo run:android --device expects a different name than emulator-5554. Placeholders: {{deviceId}}, {{avd}}."
+          "default": "ANDROID_SERIAL={{deviceId}} npx react-native run-android",
+          "description": "Override Android run command (User or Workspace). If omitted: Expo → ANDROID_SERIAL={{deviceId}} npx expo run:android; bare → ANDROID_SERIAL={{deviceId}} npx react-native run-android (RN CLI --device often does not match adb serials like emulator-5554). Placeholders: {{deviceId}}, {{avd}}."
         },
         "rnEasyEmulator.androidSdkHome": {
           "type": "string",

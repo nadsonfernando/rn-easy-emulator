@@ -42,6 +42,7 @@ export const Progress = {
   bootingIos: (name: string) => `Booting ${name}…`,
   poweringOnIos: (name: string) => `Starting ${name}…`,
   waitingForAdb: (avdName: string) => `Waiting for ${avdName} on adb…`,
+  preparingAndroid: (avdName: string) => `Preparing ${avdName} for install…`,
 } as const;
 
 export const Messages = {
@@ -55,6 +56,10 @@ export const Messages = {
   androidSdkUnset: "ANDROID_HOME is not set.",
   emulatorAdbTimeout:
     "The emulator did not show up on adb in time. Try again after it finishes booting.",
+  androidBootTimeout:
+    "The Android device is on adb but did not finish booting in time. Wait for the emulator home screen, then try again.",
+  androidAdbStabilizeTimeout:
+    "adb did not list the emulator as ready long enough to start the build. Check adb devices and try again.",
   runTaskFailed:
     "Could not start the build task. Check the Terminal / Tasks panel for details.",
   buildFailedWithExitCode: (code: number) =>

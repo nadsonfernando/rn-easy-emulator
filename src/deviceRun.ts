@@ -2,9 +2,19 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import type { AndroidAvd } from "./androidDevices";
-import { spawnAndroidEmulator, waitForAvdSerial } from "./androidDevices";
 import {
+  isAdbDeviceConnected,
+  spawnAndroidEmulator,
+  waitForAdbBootCompleted,
+  waitForAdbDevicesReportReady,
+  waitForAvdSerial,
+} from "./androidDevices";
+import {
+  ANDROID_ADB_STABILIZE_POLL_MS,
+  ANDROID_ADB_STABILIZE_STREAK,
+  ANDROID_ADB_STABILIZE_TIMEOUT_MS,
   ANDROID_ADB_WAIT_MS,
+  ANDROID_BOOT_COMPLETED_WAIT_MS,
   CONFIG_SECTION,
   IOS_BOOT_UI_DELAY_MS,
   STATUS_BAR_COMMAND_MS,
@@ -27,16 +37,22 @@ interface RunCallbacks {
 }
 
 const BARE_IOS = "npx react-native run-ios --udid {{udid}}";
-/** ADB serial (e.g. emulator-5554); works for Expo and bare RN. */
-const RN_ANDROID = "npx react-native run-android --deviceId {{deviceId}}";
+/**
+ * Target a specific emulator: set ANDROID_SERIAL for adb/Gradle (serial from `adb devices`).
+ * Avoids `--device emulator-5554`, which the RN CLI often treats as a display name, not the adb serial.
+ */
+const RN_ANDROID =
+  "ANDROID_SERIAL={{deviceId}} npx react-native run-android";
 const EXPO_IOS = "npx expo run:ios --device {{udid}}";
+/** Expo CLI does not match adb serials with `--device`; ANDROID_SERIAL is respected by adb/Gradle. */
+const EXPO_ANDROID = "ANDROID_SERIAL={{deviceId}} npx expo run:android";
 
 async function resolveDefaultRunCommands(
   workspaceRoot: string,
 ): Promise<{ ios: string; android: string }> {
   const runtime = await detectProjectRuntime(workspaceRoot);
   if (runtime === "expo") {
-    return { ios: EXPO_IOS, android: RN_ANDROID };
+    return { ios: EXPO_IOS, android: EXPO_ANDROID };
   }
   return { ios: BARE_IOS, android: RN_ANDROID };
 }
@@ -126,8 +142,10 @@ export async function runAndroidProject(
   callbacks: RunCallbacks = {},
 ): Promise<void> {
   let deviceId = avd.adbSerial ?? "";
+  const connected =
+    !!deviceId && (await isAdbDeviceConnected(sdkRoot, deviceId));
 
-  if (!deviceId) {
+  if (!connected) {
     spawnAndroidEmulator(sdkRoot, avd.avdName);
 
     const serial = await vscode.window.withProgress(
@@ -144,6 +162,33 @@ export async function runAndroidProject(
 
     deviceId = serial;
   }
+
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: Labels.Progress.preparingAndroid(avd.avdName),
+    },
+    async () => {
+      const okBoot = await waitForAdbBootCompleted(
+        sdkRoot,
+        deviceId,
+        ANDROID_BOOT_COMPLETED_WAIT_MS,
+      );
+      if (!okBoot) {
+        throw new Error(Labels.Messages.androidBootTimeout);
+      }
+      const okStable = await waitForAdbDevicesReportReady(
+        sdkRoot,
+        deviceId,
+        ANDROID_ADB_STABILIZE_POLL_MS,
+        ANDROID_ADB_STABILIZE_STREAK,
+        ANDROID_ADB_STABILIZE_TIMEOUT_MS,
+      );
+      if (!okStable) {
+        throw new Error(Labels.Messages.androidAdbStabilizeTimeout);
+      }
+    },
+  );
 
   const template = await androidRunTemplateFromConfiguration(
     configuration,

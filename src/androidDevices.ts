@@ -56,6 +56,24 @@ function parseAdbDevices(stdout: string): AdbLine[] {
   return out;
 }
 
+/** True if this serial is currently listed by adb as `device` (not offline/unauthorized). */
+export async function isAdbDeviceConnected(
+  sdkHome: string,
+  serial: string,
+): Promise<boolean> {
+  const adb = adbPath(sdkHome);
+  if (!fs.existsSync(adb)) {
+    return false;
+  }
+  try {
+    const { stdout } = await runBinary(adb, ["devices"]);
+    const lines = parseAdbDevices(stdout);
+    return lines.some((l) => l.serial === serial && l.state === "device");
+  } catch {
+    return false;
+  }
+}
+
 async function avdNameForSerial(adb: string, serial: string): Promise<string | undefined> {
   try {
     const { stdout } = await runBinary(adb, ["-s", serial, "emu", "avd", "name"]);
@@ -139,4 +157,62 @@ export async function waitForAvdSerial(
     await new Promise((r) => setTimeout(r, 1500));
   }
   return undefined;
+}
+
+/** Wait until `adb` lists the serial as `device` and `sys.boot_completed` is 1. */
+export async function waitForAdbBootCompleted(
+  sdkHome: string,
+  serial: string,
+  timeoutMs: number,
+): Promise<boolean> {
+  const adb = adbPath(sdkHome);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await isAdbDeviceConnected(sdkHome, serial))) {
+      await new Promise<void>((r) => setTimeout(r, 400));
+      continue;
+    }
+    try {
+      const { stdout } = await runBinary(adb, [
+        "-s",
+        serial,
+        "shell",
+        "getprop",
+        "sys.boot_completed",
+      ]);
+      if (stdout.trim() === "1") {
+        return true;
+      }
+    } catch {
+      /* shell not ready yet */
+    }
+    await new Promise<void>((r) => setTimeout(r, 700));
+  }
+  return false;
+}
+
+/**
+ * Poll `adb devices` until `serial` appears as `device` for `consecutiveOk` polls in a row.
+ */
+export async function waitForAdbDevicesReportReady(
+  sdkHome: string,
+  serial: string,
+  pollMs: number,
+  consecutiveOk: number,
+  timeoutMs: number,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  let streak = 0;
+  while (Date.now() < deadline) {
+    if (await isAdbDeviceConnected(sdkHome, serial)) {
+      streak += 1;
+      if (streak >= consecutiveOk) {
+        return true;
+      }
+    } else {
+      streak = 0;
+    }
+    await new Promise<void>((r) => setTimeout(r, pollMs));
+  }
+  return false;
 }
