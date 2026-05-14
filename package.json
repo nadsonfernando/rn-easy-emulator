@@ -50,9 +50,17 @@
         "icon": "$(play)"
       },
       {
-        "command": "rnEasyEmulator.togglePower",
-        "title": "Start or stop emulator",
+        "command": "rnEasyEmulator.startEmulator",
+        "title": "Start emulator",
         "icon": "$(debug-start)"
+      },
+      {
+        "command": "rnEasyEmulator.stopEmulator",
+        "title": "Stop emulator",
+        "icon": {
+          "light": "media/stop-red.svg",
+          "dark": "media/stop-red.svg"
+        }
       }
     ],
     "menus": {
@@ -66,20 +74,24 @@
       "view/item/context": [
         {
           "command": "rnEasyEmulator.runOnDevice",
-          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/ && rnEasyEmulator.isReactNativeProject",
-          "group": "inline@1"
+          "when": "view == rnEasyEmulator.devices && rnEasyEmulator.isReactNativeProject && (viewItem == sim-ios-offline || viewItem == sim-android-offline)",
+          "group": "inline@1",
+          "icon": "$(play)"
         },
         {
-          "command": "rnEasyEmulator.togglePower",
+          "command": "rnEasyEmulator.startEmulator",
           "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-offline || viewItem == sim-android-offline)",
           "group": "inline@0",
           "icon": "$(debug-start)"
         },
         {
-          "command": "rnEasyEmulator.togglePower",
+          "command": "rnEasyEmulator.stopEmulator",
           "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
           "group": "inline@0",
-          "icon": "$(debug-stop)"
+          "icon": {
+            "light": "media/stop-red.svg",
+            "dark": "media/stop-red.svg"
+          }
         },
         {
           "command": "rnEasyEmulator.runOnDevice",
@@ -87,16 +99,19 @@
           "group": "device@1"
         },
         {
-          "command": "rnEasyEmulator.togglePower",
+          "command": "rnEasyEmulator.startEmulator",
           "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-offline || viewItem == sim-android-offline)",
           "group": "device@0",
           "icon": "$(debug-start)"
         },
         {
-          "command": "rnEasyEmulator.togglePower",
+          "command": "rnEasyEmulator.stopEmulator",
           "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
           "group": "device@0",
-          "icon": "$(debug-stop)"
+          "icon": {
+            "light": "media/stop-red.svg",
+            "dark": "media/stop-red.svg"
+          }
         }
       ]
     },

@@ -40,6 +40,54 @@ function deviceIdOf(element: Extract<DeviceTreeElement, { kind: "iosSim" } | { k
   return element.kind === "iosSim" ? element.sim.udid : element.avd.avdName;
 }
 
+async function runPowerToggle(
+  element: DeviceTreeElement | undefined,
+  treeView: vscode.TreeView<DeviceTreeElement>,
+  treeProvider: DeviceTreeProvider,
+): Promise<void> {
+  const selected = resolveSelectedNode(element, treeView);
+
+  if (!isRunnableDevice(selected)) {
+    return;
+  }
+
+  const deviceId = deviceIdOf(selected);
+  treeProvider.setDeviceStatus(deviceId, DeviceStatus.Launching);
+
+  try {
+    if (selected.kind === "iosSim") {
+      const wasBooted = selected.sim.state === "Booted";
+
+      await toggleIosPower(selected.sim);
+
+      vscode.window.setStatusBarMessage(
+        wasBooted
+          ? Labels.Status.iosSimulatorShutDown
+          : Labels.Status.startingIosSimulator(selected.sim.name),
+        wasBooted ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
+      );
+    } else {
+      const wasOnline =
+        selected.avd.state === "device" && !!selected.avd.adbSerial;
+
+      await toggleAndroidPower(selected.sdk, selected.avd);
+
+      vscode.window.setStatusBarMessage(
+        wasOnline
+          ? Labels.Status.androidEmulatorStopped
+          : Labels.Status.startingAvd(selected.avd.avdName),
+        wasOnline ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
+      );
+    }
+
+    await refreshDeviceCatalog(treeProvider);
+  } catch (error) {
+    vscode.window.showErrorMessage((error as Error).message);
+  } finally {
+    treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
+  }
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const treeProvider = new DeviceTreeProvider();
   const treeView = vscode.window.createTreeView("rnEasyEmulator.devices", {
@@ -165,49 +213,16 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
 
     vscode.commands.registerCommand(
-      "rnEasyEmulator.togglePower",
+      "rnEasyEmulator.startEmulator",
       async (element?: DeviceTreeElement) => {
-        const selected = resolveSelectedNode(element, treeView);
+        await runPowerToggle(element, treeView, treeProvider);
+      },
+    ),
 
-        if (!isRunnableDevice(selected)) {
-          return;
-        }
-
-        const deviceId = deviceIdOf(selected);
-        treeProvider.setDeviceStatus(deviceId, DeviceStatus.Launching);
-
-        try {
-          if (selected.kind === "iosSim") {
-            const wasBooted = selected.sim.state === "Booted";
-
-            await toggleIosPower(selected.sim);
-
-            vscode.window.setStatusBarMessage(
-              wasBooted
-                ? Labels.Status.iosSimulatorShutDown
-                : Labels.Status.startingIosSimulator(selected.sim.name),
-              wasBooted ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
-            );
-          } else {
-            const wasOnline =
-              selected.avd.state === "device" && !!selected.avd.adbSerial;
-
-            await toggleAndroidPower(selected.sdk, selected.avd);
-
-            vscode.window.setStatusBarMessage(
-              wasOnline
-                ? Labels.Status.androidEmulatorStopped
-                : Labels.Status.startingAvd(selected.avd.avdName),
-              wasOnline ? STATUS_BAR_MESSAGE_MS : STATUS_BAR_START_EMULATOR_MS,
-            );
-          }
-
-          await refreshDeviceCatalog(treeProvider);
-        } catch (error) {
-          vscode.window.showErrorMessage((error as Error).message);
-        } finally {
-          treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
-        }
+    vscode.commands.registerCommand(
+      "rnEasyEmulator.stopEmulator",
+      async (element?: DeviceTreeElement) => {
+        await runPowerToggle(element, treeView, treeProvider);
       },
     ),
 

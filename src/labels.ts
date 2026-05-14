@@ -9,6 +9,11 @@ export function androidPlatformLabel(connectedCount: number): string {
   return `Android (${connectedCount} connected${suffix})`;
 }
 
+export const Power = {
+  startEmulator: "Start emulator",
+  stopEmulator: "Stop emulator",
+} as const;
+
 export const IosTree = {
   stateRunning: "Running",
   stateOff: "Off",
