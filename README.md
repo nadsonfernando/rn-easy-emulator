@@ -17,9 +17,8 @@ To install from a `.vsix` manually: **Extensions** → **⋯** → **Install fro
 
 ## Demo
 
-Screen recording of the extension in use (device list, run, and terminal):
+https://github.com/user-attachments/assets/ddf29f0b-58b5-4b5d-983d-bf93666a0929
 
-<video src="https://raw.githubusercontent.com/nadsonfernando/rn-easy-emulator/main/media/rn-easy-emulator-demo.mov" controls muted width="720"></video>
 
 ## Usage
 
