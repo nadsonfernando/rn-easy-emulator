@@ -184,9 +184,14 @@ export function activate(context: vscode.ExtensionContext): void {
             await runIosProject(selected.sim, workspaceRoot, configuration, {
               onCommandStart: () =>
                 treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
-              onCommandExit: () => {
+              onCommandExit: (exitCode) => {
                 treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
                 void refreshDeviceCatalog(treeProvider);
+                if (typeof exitCode === "number" && exitCode !== 0) {
+                  void vscode.window.showWarningMessage(
+                    Labels.Messages.buildFailedWithExitCode(exitCode),
+                  );
+                }
               },
             });
           } else {
@@ -198,9 +203,14 @@ export function activate(context: vscode.ExtensionContext): void {
               {
                 onCommandStart: () =>
                   treeProvider.setDeviceStatus(deviceId, DeviceStatus.Running),
-                onCommandExit: () => {
+                onCommandExit: (exitCode) => {
                   treeProvider.setDeviceStatus(deviceId, DeviceStatus.Idle);
                   void refreshDeviceCatalog(treeProvider);
+                  if (typeof exitCode === "number" && exitCode !== 0) {
+                    void vscode.window.showWarningMessage(
+                      Labels.Messages.buildFailedWithExitCode(exitCode),
+                    );
+                  }
                 },
               },
             );

@@ -1,46 +1,69 @@
-import * as cp from "child_process";
+import * as path from "path";
 import * as vscode from "vscode";
 
-import { getShell } from "./shell";
-
-const CHANNEL_NAME = "RN Easy Emulator";
-
-let channel: vscode.OutputChannel | undefined;
-
-export function getOrCreateOutputChannel(): vscode.OutputChannel {
-  if (!channel) {
-    channel = vscode.window.createOutputChannel(CHANNEL_NAME);
-  }
-  return channel;
-}
-
-export function runCommandBackground(
+/**
+ * Runs the build command in a real integrated-terminal task (full TTY / shell profile),
+ * so tools like Expo and Metro behave like a manual run. Resolves when the shell process exits.
+ */
+export async function runCommandBackground(
   cwd: string,
   command: string,
-  onExit: () => void,
-): void {
-  const ch = getOrCreateOutputChannel();
-  ch.show(/* preserveFocus= */ true);
-  ch.appendLine(`\n▶  ${command}\n`);
-
-  const shell = getShell() || process.env.SHELL || "/bin/sh";
-
-  const child = cp.spawn(shell, ["-lc", command], {
-    cwd,
-    env: { ...process.env },
-    stdio: ["ignore", "pipe", "pipe"],
+  onExit: (exitCode: number | undefined) => void,
+): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.find((f) => {
+    const root = f.uri.fsPath;
+    return cwd === root || cwd.startsWith(`${root}${path.sep}`);
   });
+  const scope = folder ?? vscode.TaskScope.Workspace;
 
-  child.stdout.on("data", (chunk: Buffer) => ch.append(chunk.toString()));
-  child.stderr.on("data", (chunk: Buffer) => ch.append(chunk.toString()));
+  const taskId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-  child.on("close", (code) => {
-    ch.appendLine(`\n■  Exited with code ${code ?? "?"}`);
-    onExit();
-  });
+  const task = new vscode.Task(
+    { type: "rnEasyEmulator", taskId },
+    scope,
+    "RN Easy Emulator",
+    "rn-easy-emulator",
+    new vscode.ShellExecution(command, { cwd }),
+    [],
+  );
 
-  child.on("error", (err) => {
-    ch.appendLine(`\n✖  Failed to start: ${err.message}`);
-    onExit();
-  });
+  task.presentationOptions = {
+    reveal: vscode.TaskRevealKind.Always,
+    panel: vscode.TaskPanelKind.Shared,
+    focus: true,
+    showReuseMessage: false,
+    clear: false,
+    echo: true,
+  };
+
+  let finished = false;
+  const finish = (exitCode: number | undefined) => {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    onExit(exitCode);
+  };
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const sub = vscode.tasks.onDidEndTaskProcess((e) => {
+        const def = e.execution.task.definition as { type?: string; taskId?: string };
+        if (def.type !== "rnEasyEmulator" || def.taskId !== taskId) {
+          return;
+        }
+        sub.dispose();
+        finish(e.exitCode);
+        resolve();
+      });
+
+      vscode.tasks.executeTask(task).then(undefined, (err: unknown) => {
+        sub.dispose();
+        reject(err instanceof Error ? err : new Error(String(err)));
+      });
+    });
+  } catch (err) {
+    finish(undefined);
+    throw err instanceof Error ? err : new Error(String(err));
+  }
 }

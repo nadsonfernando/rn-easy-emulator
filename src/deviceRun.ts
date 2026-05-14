@@ -2,10 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import type { AndroidAvd } from "./androidDevices";
-import {
-  spawnAndroidEmulator,
-  waitForAvdSerial,
-} from "./androidDevices";
+import { spawnAndroidEmulator, waitForAvdSerial } from "./androidDevices";
 import {
   ANDROID_ADB_WAIT_MS,
   CONFIG_SECTION,
@@ -20,19 +17,59 @@ import {
 } from "./iosDevices";
 import type { IosSimulator } from "./iosDevices";
 import * as Labels from "./labels";
+import { detectProjectRuntime } from "./projectKind";
 import { runBinary } from "./shell";
 import { runCommandBackground } from "./processRunner";
 
 interface RunCallbacks {
   onCommandStart?: () => void;
-  onCommandExit?: () => void;
+  onCommandExit?: (exitCode: number | undefined) => void;
 }
 
-const DEFAULT_IOS_RUN =
-  'npx react-native run-ios --udid "{{udid}}"';
+const BARE_IOS = "npx react-native run-ios --udid {{udid}}";
+const BARE_ANDROID = "npx react-native run-android --deviceId {{deviceId}}";
+const EXPO_IOS = "npx expo run:ios --device {{udid}}";
+const EXPO_ANDROID = "npx expo run:android --device {{deviceId}}";
 
-const DEFAULT_ANDROID_RUN =
-  'npx react-native run-android --deviceId "{{deviceId}}"';
+async function resolveDefaultRunCommands(
+  workspaceRoot: string,
+): Promise<{ ios: string; android: string }> {
+  const runtime = await detectProjectRuntime(workspaceRoot);
+  if (runtime === "expo") {
+    return { ios: EXPO_IOS, android: EXPO_ANDROID };
+  }
+  return { ios: BARE_IOS, android: BARE_ANDROID };
+}
+
+async function iosRunTemplateFromConfiguration(
+  configuration: vscode.WorkspaceConfiguration,
+  workspaceRoot: string,
+): Promise<string> {
+  const inspected = configuration.inspect<string>("iosRunCommand");
+  const override =
+    inspected?.workspaceFolderValue ??
+    inspected?.workspaceValue ??
+    inspected?.globalValue;
+  if (typeof override === "string" && override.trim() !== "") {
+    return override.trim();
+  }
+  return (await resolveDefaultRunCommands(workspaceRoot)).ios;
+}
+
+async function androidRunTemplateFromConfiguration(
+  configuration: vscode.WorkspaceConfiguration,
+  workspaceRoot: string,
+): Promise<string> {
+  const inspected = configuration.inspect<string>("androidRunCommand");
+  const override =
+    inspected?.workspaceFolderValue ??
+    inspected?.workspaceValue ??
+    inspected?.globalValue;
+  if (typeof override === "string" && override.trim() !== "") {
+    return override.trim();
+  }
+  return (await resolveDefaultRunCommands(workspaceRoot)).android;
+}
 
 export async function runIosProject(
   sim: IosSimulator,
@@ -54,8 +91,10 @@ export async function runIosProject(
     );
   }
 
-  const template =
-    configuration.get<string>("iosRunCommand") ?? DEFAULT_IOS_RUN;
+  const template = await iosRunTemplateFromConfiguration(
+    configuration,
+    workspaceRoot,
+  );
 
   const command = interpolateCommand(template, {
     name: sim.name,
@@ -65,14 +104,18 @@ export async function runIosProject(
 
   callbacks.onCommandStart?.();
 
-  runCommandBackground(workspaceRoot, command, () => {
-    callbacks.onCommandExit?.();
-  });
-
   vscode.window.setStatusBarMessage(
     Labels.Status.runningCommand(command),
     STATUS_BAR_COMMAND_MS,
   );
+
+  try {
+    await runCommandBackground(workspaceRoot, command, (exitCode) => {
+      callbacks.onCommandExit?.(exitCode);
+    });
+  } catch (err) {
+    throw err instanceof Error ? err : new Error(Labels.Messages.runTaskFailed);
+  }
 }
 
 export async function runAndroidProject(
@@ -102,8 +145,10 @@ export async function runAndroidProject(
     deviceId = serial;
   }
 
-  const template =
-    configuration.get<string>("androidRunCommand") ?? DEFAULT_ANDROID_RUN;
+  const template = await androidRunTemplateFromConfiguration(
+    configuration,
+    workspaceRoot,
+  );
 
   const command = interpolateCommand(template, {
     deviceId,
@@ -112,14 +157,18 @@ export async function runAndroidProject(
 
   callbacks.onCommandStart?.();
 
-  runCommandBackground(workspaceRoot, command, () => {
-    callbacks.onCommandExit?.();
-  });
-
   vscode.window.setStatusBarMessage(
     Labels.Status.runningCommand(command),
     STATUS_BAR_COMMAND_MS,
   );
+
+  try {
+    await runCommandBackground(workspaceRoot, command, (exitCode) => {
+      callbacks.onCommandExit?.(exitCode);
+    });
+  } catch (err) {
+    throw err instanceof Error ? err : new Error(Labels.Messages.runTaskFailed);
+  }
 }
 
 export async function toggleIosPower(sim: IosSimulator): Promise<void> {

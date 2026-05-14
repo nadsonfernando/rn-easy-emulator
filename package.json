@@ -115,18 +115,29 @@
         }
       ]
     },
+    "taskDefinitions": [
+      {
+        "type": "rnEasyEmulator",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "Internal id for a single run session."
+          }
+        }
+      }
+    ],
     "configuration": {
       "title": "RN Easy Emulator",
       "properties": {
         "rnEasyEmulator.iosRunCommand": {
           "type": "string",
-          "default": "npx react-native run-ios --udid \"{{udid}}\"",
-          "description": "Command to run on iOS. Placeholders: {{name}}, {{udid}}, {{runtime}}. Prefer {{udid}} so duplicate simulator names target the correct device."
+          "default": "npx react-native run-ios --udid {{udid}}",
+          "description": "Override iOS run command (User or Workspace). If omitted, the extension picks Expo vs bare from package.json: Expo → npx expo run:ios --device {{udid}}; bare → npx react-native run-ios --udid {{udid}}. Placeholders: {{name}}, {{udid}}, {{runtime}}."
         },
         "rnEasyEmulator.androidRunCommand": {
           "type": "string",
-          "default": "npx react-native run-android --deviceId \"{{deviceId}}\"",
-          "description": "Command to run on Android. Placeholders: {{deviceId}} (adb serial, e.g. emulator-5554), {{avd}}."
+          "default": "npx react-native run-android --deviceId {{deviceId}}",
+          "description": "Override Android run command (User or Workspace). If omitted: Expo → npx expo run:android --device {{deviceId}}; bare → npx react-native run-android --deviceId {{deviceId}}. Placeholders: {{deviceId}}, {{avd}}."
         },
         "rnEasyEmulator.androidSdkHome": {
           "type": "string",

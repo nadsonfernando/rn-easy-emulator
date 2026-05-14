@@ -54,6 +54,10 @@ export const Messages = {
   androidSdkUnset: "ANDROID_HOME is not set.",
   emulatorAdbTimeout:
     "The emulator did not show up on adb in time. Try again after it finishes booting.",
+  runTaskFailed:
+    "Could not start the build task. Check the Terminal / Tasks panel for details.",
+  buildFailedWithExitCode: (code: number) =>
+    `Build exited with code ${code}. Scroll the RN Easy Emulator terminal above for the error log.`,
 } as const;
 
 export const Status = {
