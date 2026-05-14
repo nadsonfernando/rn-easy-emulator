@@ -1,0 +1,121 @@
+{
+  "name": "rn-easy-emulator",
+  "displayName": "RN Easy Emulator",
+  "description": "Lists iOS and Android simulators and runs your React Native app on the device you pick.",
+  "version": "0.1.0",
+  "publisher": "nadsonfernando",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:rnEasyEmulator.devices"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rnEasyEmulator",
+          "title": "RN Emulator",
+          "icon": "media/phone.svg"
+        }
+      ]
+    },
+    "views": {
+      "rnEasyEmulator": [
+        {
+          "id": "rnEasyEmulator.devices",
+          "name": "Simulators"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "rnEasyEmulator.refresh",
+        "title": "Refresh list",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rnEasyEmulator.runOnDevice",
+        "title": "Run project on this emulator",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rnEasyEmulator.togglePower",
+        "title": "Power emulator on/off",
+        "icon": "$(debug-start)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "rnEasyEmulator.refresh",
+          "when": "view == rnEasyEmulator.devices",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rnEasyEmulator.runOnDevice",
+          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "rnEasyEmulator.togglePower",
+          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
+          "group": "inline@0"
+        },
+        {
+          "command": "rnEasyEmulator.runOnDevice",
+          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
+          "group": "device@1"
+        },
+        {
+          "command": "rnEasyEmulator.togglePower",
+          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
+          "group": "device@0"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "RN Easy Emulator",
+      "properties": {
+        "rnEasyEmulator.iosRunCommand": {
+          "type": "string",
+          "default": "npx react-native run-ios --simulator \"{{name}}\"",
+          "description": "Command to run on iOS. Placeholders: {{name}}, {{udid}}, {{runtime}}."
+        },
+        "rnEasyEmulator.androidRunCommand": {
+          "type": "string",
+          "default": "npx react-native run-android --deviceId \"{{deviceId}}\"",
+          "description": "Command to run on Android. Placeholders: {{deviceId}} (adb serial, e.g. emulator-5554), {{avd}}."
+        },
+        "rnEasyEmulator.androidSdkHome": {
+          "type": "string",
+          "default": "",
+          "description": "Android SDK root. When empty, ANDROID_HOME / ANDROID_SDK_ROOT from the environment is used."
+        },
+        "rnEasyEmulator.shellPath": {
+          "type": "string",
+          "default": "",
+          "description": "Shell used for shell-based helpers (e.g. /bin/zsh). When empty, the system default applies."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "typescript": "^5.3.3"
+  }
+}
