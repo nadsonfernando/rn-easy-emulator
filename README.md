@@ -15,6 +15,14 @@ A [Visual Studio Code](https://code.visualstudio.com/) extension (and compatible
 
 To install from a `.vsix` manually: **Extensions** → **⋯** → **Install from VSIX…**.
 
+## Demo
+
+Screen recording of the extension in use (device list, run, and terminal):
+
+<video src="https://raw.githubusercontent.com/nadsonfernando/rn-easy-emulator/main/media/rn-easy-emulator-demo.mov" controls muted width="720"></video>
+
+If the video does not play in your viewer, open [`media/rn-easy-emulator-demo.mov`](media/rn-easy-emulator-demo.mov) on GitHub or play the file locally after cloning.
+
 ## Usage
 
 1. Open your React Native app’s root folder in VS Code.
