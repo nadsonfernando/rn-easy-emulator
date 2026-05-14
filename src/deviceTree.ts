@@ -17,7 +17,7 @@ export const enum DeviceStatus {
 }
 
 const GREEN = new vscode.ThemeColor("terminal.ansiBrightGreen");
-const RED   = new vscode.ThemeColor("terminal.ansiBrightRed");
+const RED = new vscode.ThemeColor("terminal.ansiBrightRed");
 
 export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeElement> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<

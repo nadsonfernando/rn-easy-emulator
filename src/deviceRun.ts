@@ -29,7 +29,7 @@ interface RunCallbacks {
 }
 
 const DEFAULT_IOS_RUN =
-  'npx react-native run-ios --simulator "{{name}}"';
+  'npx react-native run-ios --udid "{{udid}}"';
 
 const DEFAULT_ANDROID_RUN =
   'npx react-native run-android --deviceId "{{deviceId}}"';

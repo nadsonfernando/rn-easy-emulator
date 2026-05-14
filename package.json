@@ -120,8 +120,8 @@
       "properties": {
         "rnEasyEmulator.iosRunCommand": {
           "type": "string",
-          "default": "npx react-native run-ios --simulator \"{{name}}\"",
-          "description": "Command to run on iOS. Placeholders: {{name}}, {{udid}}, {{runtime}}."
+          "default": "npx react-native run-ios --udid \"{{udid}}\"",
+          "description": "Command to run on iOS. Placeholders: {{name}}, {{udid}}, {{runtime}}. Prefer {{udid}} so duplicate simulator names target the correct device."
         },
         "rnEasyEmulator.androidRunCommand": {
           "type": "string",
