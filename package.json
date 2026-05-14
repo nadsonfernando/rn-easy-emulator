@@ -51,7 +51,7 @@
       },
       {
         "command": "rnEasyEmulator.togglePower",
-        "title": "Power emulator on/off",
+        "title": "Start or stop emulator",
         "icon": "$(debug-start)"
       }
     ],
@@ -71,8 +71,15 @@
         },
         {
           "command": "rnEasyEmulator.togglePower",
-          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
-          "group": "inline@0"
+          "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-offline || viewItem == sim-android-offline)",
+          "group": "inline@0",
+          "icon": "$(debug-start)"
+        },
+        {
+          "command": "rnEasyEmulator.togglePower",
+          "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
+          "group": "inline@0",
+          "icon": "$(debug-stop)"
         },
         {
           "command": "rnEasyEmulator.runOnDevice",
@@ -81,8 +88,15 @@
         },
         {
           "command": "rnEasyEmulator.togglePower",
-          "when": "view == rnEasyEmulator.devices && viewItem =~ /^sim-/",
-          "group": "device@0"
+          "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-offline || viewItem == sim-android-offline)",
+          "group": "device@0",
+          "icon": "$(debug-start)"
+        },
+        {
+          "command": "rnEasyEmulator.togglePower",
+          "when": "view == rnEasyEmulator.devices && (viewItem == sim-ios-booted || viewItem == sim-android-device)",
+          "group": "device@0",
+          "icon": "$(debug-stop)"
         }
       ]
     },
