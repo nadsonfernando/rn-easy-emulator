@@ -171,18 +171,6 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
 
     item.contextValue = isBooted ? "sim-ios-booted" : "sim-ios-offline";
 
-    item.command = isBooted
-      ? {
-          command: "rnEasyEmulator.stopEmulator",
-          title: Labels.Power.stopEmulator,
-          arguments: [element],
-        }
-      : {
-          command: "rnEasyEmulator.runOnDevice",
-          title: Labels.IosTree.runCommandTitle,
-          arguments: [element],
-        };
-
     return item;
   }
 
@@ -215,18 +203,6 @@ export class DeviceTreeProvider implements vscode.TreeDataProvider<DeviceTreeEle
     }
 
     item.contextValue = isOnline ? "sim-android-device" : "sim-android-offline";
-
-    item.command = isOnline
-      ? {
-          command: "rnEasyEmulator.stopEmulator",
-          title: Labels.Power.stopEmulator,
-          arguments: [element],
-        }
-      : {
-          command: "rnEasyEmulator.runOnDevice",
-          title: Labels.AndroidTree.runCommandTitle,
-          arguments: [element],
-        };
 
     return item;
   }
