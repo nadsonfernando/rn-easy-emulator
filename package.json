@@ -4,6 +4,7 @@
   "description": "Lists iOS and Android simulators and runs your React Native app on the device you pick.",
   "version": "0.1.0",
   "publisher": "nadsonfernando",
+  "license": "MIT",
   "icon": "media/extension-icon.jpg",
   "engines": {
     "vscode": "^1.85.0"
